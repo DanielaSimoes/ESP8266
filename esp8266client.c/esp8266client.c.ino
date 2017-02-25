@@ -35,25 +35,16 @@ void setup() {
 void loop() {
 
   WiFiClient client;
-  const int httpPort = 5000;
-  if (!client.connect(host, httpPort)) {
+  const int tcpPort = 7891;
+  if (!client.connect(host, tcpPort)) {
     Serial.println("connection failed");
-    //digitalWrite(2, LOW);  // Turn the LED off by making the voltage HIGH
-    //delay(1000);                      // Wait for a second
     return;
   }
 
  String data = "message=ok";
 
-   Serial.print("Requesting POST: ");
+   Serial.print("Sending message...: ");
    // Send request to the server:
-   client.println("POST / HTTP/1.1");
-   client.println("Host: server_name");
-   client.println("Accept: */*");
-   client.println("Content-Type: application/x-www-form-urlencoded");
-   client.print("Content-Length: ");
-   client.println(data.length());
-   client.println();
    client.print(data);
     
    delay(500); // Can be changed
