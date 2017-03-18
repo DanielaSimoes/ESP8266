@@ -1,5 +1,9 @@
 #include <ESP8266WiFi.h>
 
+extern "C" {
+#include "user_interface.h"
+}
+
 const char* ssid     = "RaspWiFi";
 const char* password = "raspberry";
 
@@ -29,7 +33,7 @@ void loop() {
     {
       if (WiFi.SSID(i) == ssid){
          // We start by connecting to a WiFi network
-          Serial.println();
+          Serial.println();             
           Serial.println();
           Serial.print("Connecting to ");
           Serial.println(ssid);
