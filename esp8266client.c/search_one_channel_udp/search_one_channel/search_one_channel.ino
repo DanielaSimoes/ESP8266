@@ -1,5 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+#include <string.h>
+#include <stdio.h>
 
 #ifdef ESP8266
 extern "C" {
@@ -9,11 +11,8 @@ extern "C" {
 }
 #endif
 
-const char* ssid     = "RaspWiFi";
-const char* password = "raspberry";
+const char* ssid     = "netRider";
 const int channel = 1;
-const char* host = "192.168.0.1";
-const int tcpPort = 7891;
 bool connected_to_wifi = false;
 String data = "message=green\n";
 
@@ -26,22 +25,32 @@ static  void  ICACHE_FLASH_ATTR scan_done(void *arg, STATUS  status){
     struct  bss_info  *bss_link = (struct bss_info  *)arg;
     
     if(bss_link!=NULL){
-      Serial.println();
-      Serial.print("Connecting to ");
-      Serial.println((char*)bss_link->ssid);
 
-      wifi_set_opmode(STATIONAP_MODE);//Set  softAP  + station mode
+       while (bss_link != NULL) {
+          if(strstr((char*)bss_link->ssid, ssid)){
+            Serial.println((char*)bss_link->ssid);
 
-      struct station_config stationConf;
-      stationConf.bssid_set  = 0;            //need  not check MAC address of  AP
-    
-      os_memcpy(&stationConf.ssid, ssid, 32);  
-      os_memcpy(&stationConf.password, password, 64);  
+            Serial.println();
+            Serial.print("Connecting to ");
+            Serial.println((char*)bss_link->ssid);
       
-      wifi_station_set_config(&stationConf); 
-
-      wifi_station_disconnect();
-      connected_to_wifi = wifi_station_connect();
+            wifi_set_opmode(STATIONAP_MODE);//Set  softAP  + station mode
+      
+            struct station_config stationConf;
+            stationConf.bssid_set  = 0;            //need  not check MAC address of  AP
+          
+            os_memcpy(&stationConf.ssid, (char*)bss_link->ssid, 32);  
+            
+            wifi_station_set_config(&stationConf); 
+      
+            wifi_station_disconnect();
+            connected_to_wifi = wifi_station_connect();
+            
+            break;
+          }
+    
+          bss_link = bss_link->next.stqe_next;
+       } 
     }
 }
 
@@ -52,15 +61,18 @@ void loop() {
   if(!connected_to_wifi){
     #ifdef ESP8266
       scan_config scan = {
-          (uint8 *)ssid,            //here goes the SSID
+          NULL,                         //here goes the SSID
           NULL,                         //here goes the bssid
-          channel,                           //Here goes the channel we want
+          channel,                         //Here goes the channel we want
           false                         //hide channels
       };
    
       wifi_station_scan(&scan, scan_done);
 
-      Serial.println("NET STATUS:");
+      uint8 netStatus = wifi_station_get_connect_status();
+      Serial.print("CONNECTION STATUS:");
+      Serial.print(netStatus);
+      Serial.println("");
       Serial.print("STATION_IDLE:");
       Serial.print(STATION_IDLE);
       Serial.println("");
@@ -105,17 +117,17 @@ void loop() {
         WiFiUDP Udp;
         unsigned int localUdpPort = 4210;
 
-      
         WiFiClient client;
-        const int udpPort = 7891;
-        char  replyPacekt[] = "Hi there! Got the message :-)";
+        const int udpPort = 13000;
+        char  replyPacekt[] = "Got the message";
 
-        Udp.beginPacket(host, udpPort);
+        Serial.println("");
+        Serial.println("WiFi gateway");
+        Serial.println(WiFi.gatewayIP());
+        Udp.beginPacket(WiFi.gatewayIP(), udpPort);
         Udp.write(replyPacekt);
         Udp.endPacket();
-
-       Serial.println();
-       Serial.println("closing connection");
+        Serial.println("sent");
    }
     
   }

@@ -42,5 +42,4 @@ int main(void) {
 		ret = msg_close(handler);
 		nanosleep(&time,NULL);
 	}
-
 }
