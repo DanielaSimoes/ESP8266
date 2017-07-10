@@ -3,6 +3,50 @@
 #include <string.h>
 #include <stdio.h>
 
+struct Packet
+{
+  double Time;
+  char ID[10];
+  char Lon[50];
+  char Lat[50];
+  char Course[50];
+  char Message[50];
+};
+
+
+typedef struct Packet Packet_t;
+char packet_char[sizeof(struct Packet)];
+
+/* Payload */
+char payload[64];
+int payload_size;
+
+static int id = 0;
+
+void buildPayload(Packet_t &data, char *payload, int *payload_size){
+
+  /* | UDP Header | ID | Lon | Lat | Course | Message */
+
+  itoa(id,data.ID,2);
+  id = id + 1;
+  itoa(0,data.Lon,10);          /* dummy */
+  itoa(0,data.Lat,10);          /* dummy */
+  strcpy(data.Course,"NE");     /* dummy */
+  strcpy(data.Message,"STOP");   /* dummy */
+
+  strcpy(payload,data.ID);
+  strcat(payload," | ");
+  strcat(payload,data.Lon);
+  strcat(payload," | ");
+  strcat(payload,data.Lat);
+  strcat(payload," | ");
+  strcat(payload,data.Course);
+  strcat(payload," | ");
+  strcat(payload,data.Message);
+
+  *payload_size = strlen(payload)+1;
+}
+
 #ifdef ESP8266
 extern "C" {
   #include "user_interface.h"
@@ -11,10 +55,11 @@ extern "C" {
 }
 #endif
 
-const char* ssid     = "netRider";
+const char* ssid = "netRider";
 const int channel = 1;
 bool connected_to_wifi = false;
-String data = "message=green\n";
+
+Packet_t data;
 
 void setup() {
   Serial.begin(115200);
@@ -34,10 +79,10 @@ static  void  ICACHE_FLASH_ATTR scan_done(void *arg, STATUS  status){
             Serial.print("Connecting to ");
             Serial.println((char*)bss_link->ssid);
       
-            wifi_set_opmode(STATIONAP_MODE);//Set  softAP  + station mode
+            wifi_set_opmode(STATIONAP_MODE);  //Set softAP  + station mode
       
             struct station_config stationConf;
-            stationConf.bssid_set  = 0;            //need  not check MAC address of  AP
+            stationConf.bssid_set  = 0;            //need not check MAC address of AP
           
             os_memcpy(&stationConf.ssid, (char*)bss_link->ssid, 32);  
             
@@ -115,17 +160,22 @@ void loop() {
         Serial.println(WiFi.localIP()); 
 
         WiFiUDP Udp;
-        unsigned int localUdpPort = 4210;
-
-        WiFiClient client;
         const int udpPort = 13000;
-        char  replyPacekt[] = "Got the message";
+        
+        buildPayload(data, payload, &payload_size);
+        
+        /* copy to char to send */
+        memcpy(packet_char, data.ID, sizeof data.ID);
+        memcpy(packet_char + sizeof data.ID, data.Lon, sizeof data.Lon);
+        memcpy(packet_char + sizeof data.ID + sizeof data.Lon, data.Lat, sizeof data.Lat);
+        memcpy(packet_char + sizeof data.ID + sizeof data.Lon + sizeof data.Lat, data.Course, sizeof data.Course);
+        memcpy(packet_char + sizeof data.ID + sizeof data.Lon + sizeof data.Lat + sizeof data.Course, data.Message, sizeof data.Message);  
 
         Serial.println("");
         Serial.println("WiFi gateway");
         Serial.println(WiFi.gatewayIP());
         Udp.beginPacket(WiFi.gatewayIP(), udpPort);
-        Udp.write(replyPacekt);
+        Udp.write(packet_char);
         Udp.endPacket();
         Serial.println("sent");
    }
