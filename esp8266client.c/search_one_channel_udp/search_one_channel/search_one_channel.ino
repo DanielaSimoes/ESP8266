@@ -5,7 +5,6 @@
 
 struct Packet
 {
-  double Time;
   char ID[10];
   char Lon[50];
   char Lat[50];
@@ -15,7 +14,6 @@ struct Packet
 
 
 typedef struct Packet Packet_t;
-char packet_char[sizeof(struct Packet)];
 
 /* Payload */
 char payload[64];
@@ -28,20 +26,20 @@ void buildPayload(Packet_t &data, char *payload, int *payload_size){
   /* | UDP Header | ID | Lon | Lat | Course | Message */
 
   itoa(id,data.ID,2);
-  id = id + 1;
-  itoa(0,data.Lon,10);          /* dummy */
-  itoa(0,data.Lat,10);          /* dummy */
-  strcpy(data.Course,"NE");     /* dummy */
+  id = 3;                       /* dummy */
+  strcpy(data.Lon,"40.634824");          /* dummy */
+  strcpy(data.Lat,"-8.659453");          /* dummy */
+  strcpy(data.Course,"0");     /* dummy */
   strcpy(data.Message,"STOP");   /* dummy */
 
   strcpy(payload,data.ID);
-  strcat(payload," | ");
+  strcat(payload," ");
   strcat(payload,data.Lon);
-  strcat(payload," | ");
+  strcat(payload," ");
   strcat(payload,data.Lat);
-  strcat(payload," | ");
+  strcat(payload," ");
   strcat(payload,data.Course);
-  strcat(payload," | ");
+  strcat(payload," ");
   strcat(payload,data.Message);
 
   *payload_size = strlen(payload)+1;
@@ -163,19 +161,12 @@ void loop() {
         const int udpPort = 13000;
         
         buildPayload(data, payload, &payload_size);
-        
-        /* copy to char to send */
-        memcpy(packet_char, data.ID, sizeof data.ID);
-        memcpy(packet_char + sizeof data.ID, data.Lon, sizeof data.Lon);
-        memcpy(packet_char + sizeof data.ID + sizeof data.Lon, data.Lat, sizeof data.Lat);
-        memcpy(packet_char + sizeof data.ID + sizeof data.Lon + sizeof data.Lat, data.Course, sizeof data.Course);
-        memcpy(packet_char + sizeof data.ID + sizeof data.Lon + sizeof data.Lat + sizeof data.Course, data.Message, sizeof data.Message);  
 
         Serial.println("");
         Serial.println("WiFi gateway");
         Serial.println(WiFi.gatewayIP());
         Udp.beginPacket(WiFi.gatewayIP(), udpPort);
-        Udp.write(packet_char);
+        Udp.write(payload);
         Udp.endPacket();
         Serial.println("sent");
    }
