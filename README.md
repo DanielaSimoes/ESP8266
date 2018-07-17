@@ -7,3 +7,5 @@ Then, open Board Managers > Board menu and install esp8266.
 The least step is select the ESP8266 after the installation in Tools > Board and select the right port in Tools > Port.
 
 If you can't find the Port, it means that you have to find some drivers or you need to give some permitions.
+
+The repository contains the code to exchange information about traffic signals informations.
